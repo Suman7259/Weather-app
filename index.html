@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Weather App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .app {
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 20px;
+      width: 400px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    input {
+      padding: 10px;
+      width: 70%;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-right: 5px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background: #ff9800;
+      color: white;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:hover { background: #e68900; }
+    .weather {
+      margin-top: 20px;
+    }
+    .temp {
+      font-size: 40px;
+      font-weight: bold;
+    }
+    .desc {
+      text-transform: capitalize;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .details {
+      font-size: 14px;
+      color: #ddd;
+    }
+    .forecast {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .day {
+      background: rgba(255,255,255,0.2);
+      padding: 10px;
+      border-radius: 12px;
+      flex: 1;
+    }
+    .day img {
+      width: 50px;
+      height: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <h1>🌤 Weather App</h1>
+  <input type="text" id="city" placeholder="Enter city">
+  <button onclick="getWeather()">Search</button>
+  <div class="weather" id="weather"></div>
+  <div class="forecast" id="forecast"></div>
+</div>
+
+<script>
+const apiKey = "bd5e378503939ddaee76f12ad7a97608";
+ // Replace with your OpenWeatherMap API key
+
+  async function getWeather() {
+    const city = document.getElementById("city").value.trim();
+    const weatherDiv = document.getElementById("weather");
+    const forecastDiv = document.getElementById("forecast");
+    if (!city) {
+      weatherDiv.innerHTML = "<p>Please enter a city name</p>";
+      forecastDiv.innerHTML = "";
+      return;
+    }
+
+    try {
+      // Current weather
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("City not found");
+      const data = await res.json();
+
+      const temp = Math.round(data.main.temp);
+      const desc = data.weather[0].description;
+      const icon = data.weather[0].icon;
+
+      weatherDiv.innerHTML = `
+        <div class="temp">${temp}°C</div>
+        <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${desc}">
+        <div class="desc">${desc}</div>
+        <div class="details">Humidity: ${data.main.humidity}% | Wind: ${data.wind.speed} m/s</div>
+      `;
+
+      // 5-day forecast
+      const fUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+      const fres = await fetch(fUrl);
+      const fdata = await fres.json();
+
+      let daily = {};
+      fdata.list.forEach(item => {
+        const date = new Date(item.dt_txt).toLocaleDateString("en-US", { weekday: "short" });
+        if (!daily[date] && item.dt_txt.includes("12:00:00")) {
+          daily[date] = {
+            temp: Math.round(item.main.temp),
+            icon: item.weather[0].icon,
+            desc: item.weather[0].description
+          };
+        }
+      });
+
+      forecastDiv.innerHTML = "";
+      Object.keys(daily).forEach(day => {
+        forecastDiv.innerHTML += `
+          <div class="day">
+            <h4>${day}</h4>
+            <img src="https://openweathermap.org/img/wn/${daily[day].icon}@2x.png">
+            <div>${daily[day].temp}°C</div>
+            <small>${daily[day].desc}</small>
+          </div>
+        `;
+      });
+
+    } catch (err) {
+      weatherDiv.innerHTML = "<p>❌ City not found</p>";
+      forecastDiv.innerHTML = "";
+    }
+  }
+</script>
+
+</body>
+</html>
